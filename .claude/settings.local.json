@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(\"C:\\Users\\visha\\ucl-hacker\\src\\components\\ui\\tooltip.tsx\")",
+      "Bash(npm run build:*)",
+      "Bash(dir \"C:\\Users\\visha\\ucl-hacker\\src\\components\\ui\")",
+      "Bash(findstr:*)",
+      "Bash(test:*)",
+      "Bash(npm install)",
+      "Bash(cat:*)",
+      "Bash(pnpm install:*)",
+      "Bash(pnpm run build:*)",
+      "Bash(npx tsc:*)",
+      "Bash(node -e:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
