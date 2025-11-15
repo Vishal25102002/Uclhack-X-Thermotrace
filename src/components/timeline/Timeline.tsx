@@ -49,8 +49,14 @@ export default function Timeline({
   height = 200,
 }: TimelineProps) {
   const [zoomLevel, setZoomLevel] = useState(DEFAULT_ZOOM)
-  const { start, end } = getTimeRangeDates(timeRange)
-  const totalMs = end.getTime() - start.getTime()
+
+  // 50-minute timeline with 96 traces (one every ~31 seconds)
+  const TIMELINE_DURATION_MS = 50 * 60 * 1000 // 50 minutes in milliseconds
+  const now = new Date()
+  const start = new Date(now.getTime() - TIMELINE_DURATION_MS)
+  const end = now
+  const totalMs = TIMELINE_DURATION_MS
+
   const baseWidth = 1200 // Base width in pixels
   const width = baseWidth * zoomLevel
   const pixelsPerMs = width / totalMs
@@ -63,9 +69,10 @@ export default function Timeline({
   }, [events, start, end])
 
   // Generate timeline segments representing energy efficiency status
+  // 96 traces for 50 minutes = 1 trace every ~31.25 seconds
   const timelineSegments = useMemo(() => {
     const segments: Array<{ id: string; color: string; width: number; status: 'optimal' | 'issue'; efficiency: number }> = []
-    const numSegments = 200 // More granular segments for detailed energy monitoring
+    const numSegments = 96 // Exactly 96 traces for 50-minute period
 
     for (let i = 0; i < numSegments; i++) {
       const color = getEnergyStatusColor(i, numSegments)
@@ -144,17 +151,17 @@ export default function Timeline({
           </div>
         </div>
 
-        {/* Energy Status Bar */}
+        {/* Energy Status Bar - 96 Individual Boxes */}
         <div className="relative">
-          <div className="w-full h-10 bg-gray-100 dark:bg-slate-800 rounded-lg overflow-hidden flex border-2 border-gray-200 dark:border-slate-600 shadow-sm">
+          <div className="w-full h-12 bg-gray-100 dark:bg-slate-800 rounded-lg p-2 flex gap-1 border border-gray-200 dark:border-slate-600 shadow-sm">
             {timelineSegments.map((segment, index) => (
               <div
                 key={segment.id}
                 style={{
-                  width: `${segment.width}%`,
                   backgroundColor: segment.color,
+                  flex: '1 1 0%',
                 }}
-                className="h-full transition-all hover:brightness-110 cursor-pointer relative"
+                className="h-full rounded-sm transition-all hover:brightness-110 hover:scale-105 cursor-pointer relative shadow-sm"
                 onMouseEnter={() => setHoveredSegment(index)}
                 onMouseLeave={() => setHoveredSegment(null)}
               />
@@ -204,7 +211,7 @@ export default function Timeline({
         {/* Time Markers */}
         <div className="mt-2 flex justify-between text-xs text-gray-500 font-mono">
           <span>{start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-          <span>Now</span>
+          <span className="text-blue-600 font-semibold">50 min • 96 traces</span>
           <span>{end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
         </div>
       </div>

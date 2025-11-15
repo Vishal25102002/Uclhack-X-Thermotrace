@@ -5,8 +5,15 @@ import { HeaderBar } from "@/components/layout"
 import { Timeline } from "@/components/timeline"
 import { OfflineIndicator } from "@/components/shared"
 import { DashboardCards } from "@/components/dashboard"
+import { ChatInterface } from "@/components/chat"
 import { TimelineEvent, TimeRange } from "@/types/timeline"
 import { mockTimelineEvents } from "@/utils/mockData/timelineEvents"
+import {
+  ExpandableChat,
+  ExpandableChatHeader,
+  ExpandableChatBody,
+} from "@/components/ui/expandable-chat"
+import { Bot } from "lucide-react"
 
 export default function Home() {
   const [selectedEventId, setSelectedEventId] = useState<string | undefined>()
@@ -72,12 +79,48 @@ export default function Home() {
             </p>
           </div>
 
-          <DashboardCards 
+          <DashboardCards
             selectedEventId={selectedEventId}
             timeRange={timeRange}
           />
         </div>
       </main>
+
+      {/* Expandable Chat */}
+      <ExpandableChat position="bottom-right" size="md" icon={<Bot className="h-6 w-6" />}>
+        <ExpandableChatHeader className="bg-gradient-to-r from-blue-600 to-blue-700 text-white border-none shadow-lg">
+          <div className="flex items-center justify-between w-full">
+            <div className="flex items-center gap-3">
+              {/* Animated Avatar */}
+              <div className="relative">
+                <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border-2 border-white/30">
+                  <Bot className="h-5 w-5 text-white" />
+                </div>
+                <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-green-400 border-2 border-blue-700 animate-pulse"></div>
+              </div>
+
+              {/* Title and Status */}
+              <div>
+                <h3 className="font-bold text-base tracking-tight">ThermoTrace AI</h3>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></div>
+                  <p className="text-xs text-blue-100 font-medium">Online • Ready to help</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Minimize indicator */}
+            <div className="flex items-center gap-1">
+              <div className="w-1 h-1 rounded-full bg-white/60"></div>
+              <div className="w-1 h-1 rounded-full bg-white/60"></div>
+              <div className="w-1 h-1 rounded-full bg-white/60"></div>
+            </div>
+          </div>
+        </ExpandableChatHeader>
+        <ExpandableChatBody className="bg-white">
+          <ChatInterface />
+        </ExpandableChatBody>
+      </ExpandableChat>
     </div>
   )
 }
