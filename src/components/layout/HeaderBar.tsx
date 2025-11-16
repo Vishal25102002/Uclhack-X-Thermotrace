@@ -74,15 +74,15 @@ export default function HeaderBar({
   }
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 h-16 border-b bg-white dark:bg-slate-900 shadow-sm">
-      <div className="container mx-auto max-w-7xl h-full px-6">
+    <header className="fixed top-0 left-0 right-0 z-50 h-16 bg-background shadow-sm">
+      <div className="h-full px-6">
         <div className="flex h-full items-center justify-between">
           {/* Left section: Logo and Title */}
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-3">
               {/* ThermoTrace Logo - Temperature monitoring icon */}
               <div className="relative">
-                <div className="rounded-xl bg-gradient-to-br from-blue-600 to-blue-700 p-3 shadow-lg">
+                <div className="rounded-xl bg-gradient-to-br from-slate-700 to-slate-800 p-3 shadow-lg">
                   <svg
                     className="h-7 w-7 text-white"
                     viewBox="0 0 24 24"
@@ -100,7 +100,7 @@ export default function HeaderBar({
                     <path d="M17 7 L19 9 L21 7" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 </div>
-                <div className="absolute -bottom-1 -right-1 h-3 w-3 rounded-full bg-green-500 border-2 border-white animate-pulse"></div>
+                <div className="absolute -bottom-1 -right-1 h-3 w-3 rounded-full bg-emerald-500 border-2 border-white animate-pulse"></div>
               </div>
               <div className="flex flex-col">
                 <h1 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">
@@ -111,75 +111,29 @@ export default function HeaderBar({
                 </p>
               </div>
             </div>
-
-            <div className="hidden lg:flex items-center gap-3 ml-6">
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800">
-                <Activity className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                <span className="text-sm font-medium text-blue-900 dark:text-blue-100">
-                  System:
-                </span>
-                <StatusBadge status={systemStatus}>
-                  {getStatusLabel(systemStatus)}
-                </StatusBadge>
-              </div>
-
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800">
-                <div className="h-2 w-2 rounded-full bg-green-500 dark:bg-green-400 animate-pulse shadow-sm" />
-                <span className="text-sm font-medium text-green-900 dark:text-green-100">
-                  AI: {agentHealth.charAt(0).toUpperCase() + agentHealth.slice(1)}
-                </span>
-              </div>
-            </div>
           </div>
 
-          {/* Right section: Clock, Alerts, and User Menu */}
+          {/* Right section: Clock and User Menu */}
           <div className="flex items-center gap-3">
             {/* Clock */}
             <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-              <Clock className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+              <Clock className="h-4 w-4 text-slate-500 dark:text-slate-400" />
               <time
                 dateTime={mounted ? currentTime.toISOString() : ""}
-                className="text-sm font-mono font-semibold text-slate-900 dark:text-slate-100"
+                className="text-sm tabular-nums font-semibold text-slate-700 dark:text-slate-100"
               >
                 {mounted ? formatTime(currentTime) : "--:--:--"}
               </time>
             </div>
-
-            {/* Alert Counter */}
-            <button
-              onClick={onAlertClick}
-              className={cn(
-                "relative flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-all",
-                "hover:shadow-md",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2",
-                alertCount > 0 
-                  ? "bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800" 
-                  : "bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700"
-              )}
-              aria-label={`${alertCount} alerts`}
-            >
-              <Bell className={cn("h-4 w-4", alertCount > 0 && "animate-pulse")} />
-              <span className="hidden sm:inline">
-                {alertCount > 0 ? `${alertCount} Alert${alertCount !== 1 ? 's' : ''}` : 'Alerts'}
-              </span>
-              {alertCount > 0 && (
-                <Badge
-                  variant="error"
-                  className="absolute -right-1 -top-1 h-5 min-w-5 px-1.5 text-xs bg-red-600 text-white border-2 border-white dark:border-slate-900 shadow-sm"
-                >
-                  {alertCount}
-                </Badge>
-              )}
-            </button>
 
             {/* User Menu */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
                   className={cn(
-                    "flex items-center justify-center rounded-lg w-9 h-9 text-sm font-medium transition-all bg-blue-600 text-white shadow-sm",
-                    "hover:bg-blue-700 hover:shadow-md",
-                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                    "flex items-center justify-center rounded-lg w-9 h-9 text-sm font-medium transition-all bg-slate-700 text-white shadow-sm",
+                    "hover:bg-slate-800 hover:shadow-md",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500 focus-visible:ring-offset-2"
                   )}
                   aria-label="User menu"
                 >

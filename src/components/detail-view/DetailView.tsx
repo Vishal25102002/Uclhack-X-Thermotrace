@@ -50,7 +50,7 @@ export default function DetailView({
 
       {/* Bottom Section: Decision Summary */}
       <div className="border-t bg-background px-6 py-4">
-        <DecisionSummary decisionId={decisionId} />
+        <DecisionSummary timestepIndex={parseInt(decisionId) || 0} />
       </div>
     </div>
   )

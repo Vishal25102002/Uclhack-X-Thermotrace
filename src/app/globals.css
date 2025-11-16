@@ -14,7 +14,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 9%;
 
-    --primary: 0 0% 9%;
+    --primary: 166 68% 45%;
     --primary-foreground: 0 0% 98%;
 
     --secondary: 0 0% 96.1%;
@@ -36,21 +36,21 @@
     --radius: 0.5rem;
 
     /* Custom status colors - uniform, no gradients */
-    --success: 142 76% 36%;
-    --warning: 38 92% 50%;
-    --error: 0 84% 60%;
-    --info: 217 91% 60%;
+    --success: 166 68% 45%;
+    --warning: 36 100% 50%;
+    --error: 3 82% 63%;
+    --info: 166 68% 55%;
 
     /* Event type colors */
-    --agent-decision: 262 83% 58%;
-    --alert: 38 92% 50%;
-    --manual-override: 217 91% 60%;
+    --agent-decision: 166 68% 45%;
+    --alert: 36 100% 50%;
+    --manual-override: 166 68% 55%;
 
     /* Temperature colors */
-    --temp-blue: 217 91% 60%;
-    --temp-green: 142 76% 36%;
-    --temp-orange: 38 92% 50%;
-    --temp-red: 0 84% 60%;
+    --temp-blue: 166 68% 55%;
+    --temp-green: 166 68% 45%;
+    --temp-orange: 36 100% 50%;
+    --temp-red: 3 82% 63%;
   }
 }
 

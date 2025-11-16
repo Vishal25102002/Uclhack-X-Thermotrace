@@ -1,142 +1,36 @@
 "use client"
 
-import React, { useState } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import {
-  Zap,
-  Thermometer,
-  Brain,
-  Lightbulb,
-  ArrowRight,
-  CheckCircle2,
-  Activity,
-  RefreshCw,
-  Wrench
-} from "lucide-react"
-import { Badge } from "@/components/ui/badge"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { AgentFlowChart, AgentResponseCard } from "@/components/visualization"
-import { AgentNode, AgentExecution } from "@/types/agent"
-import { mockAgentExecution, mockAgentResponses } from "@/utils/mockData/agentExecution"
-import LoadingSpinner from "@/components/shared/LoadingSpinner"
-import ErrorMessage from "@/components/shared/ErrorMessage"
-import { SpotlightCard } from "@/components/ui/spotlight-card"
+import React, { useState, useEffect } from "react"
+import { ChevronDown, ChevronUp, CheckCircle2, Clock, Bot, Wrench, Brain, Cpu, TrendingUp, Shield, Zap, Activity, ArrowRight } from "lucide-react"
+import { loadRunData, detectControlDecision, checkViolations, parseTimestepData, getEfficiency } from "@/utils/decisionData"
+import agentTrace30 from '@/data/agent-trace-30.json'
 
-interface Metrics {
-  temperature: { value: string; status: "optimal" | "good" | "warning" }
-  energyEfficiency: { value: string; status: "optimal" | "good" | "warning" }
-  aiDecisions: { value: string; status: "optimal" | "good" | "warning" }
+interface ChildRun {
+  id: string
+  name: string
+  run_type: 'tool' | 'llm' | 'chain'
+  summary?: string
+  start_time: string
+  end_time: string
+  execution_time_ms: number
+  status: string
+  inputs: any
+  outputs: any
+  metadata?: any
+  tags?: string[]
 }
 
-// Helper function to extract metrics from node
-function getMetricsFromNode(selectedNode: AgentNode | null, execution: AgentExecution | null): Metrics {
-  // Default/fallback metrics
-  const defaultMetrics: Metrics = {
-    temperature: { value: "22.3", status: "optimal" },
-    energyEfficiency: { value: "94", status: "good" },
-    aiDecisions: { value: "0", status: "good" }
+interface AgentTraceData {
+  id: string
+  name: string
+  start_time: string
+  end_time: string
+  execution_time_ms: number
+  status: string
+  metadata: {
+    cycle_number: number
   }
-
-  if (!selectedNode && !execution) {
-    return defaultMetrics
-  }
-
-  const node = selectedNode || execution?.rootNode
-  if (!node) return defaultMetrics
-
-  // Extract temperature from node output or input
-  let temperature = defaultMetrics.temperature
-  if (node.output?.temperature !== undefined) {
-    const tempValue = typeof node.output.temperature === 'number' ? node.output.temperature : parseFloat(node.output.temperature) || 22.3
-    temperature = {
-      value: tempValue.toFixed(1),
-      status: tempValue <= 22.5 ? "optimal" : tempValue <= 24 ? "good" : "warning"
-    }
-  } else if (node.input?.currentTemp !== undefined) {
-    const tempValue = typeof node.input.currentTemp === 'number' ? node.input.currentTemp : parseFloat(node.input.currentTemp) || 22.3
-    temperature = {
-      value: tempValue.toFixed(1),
-      status: tempValue <= 22.5 ? "optimal" : tempValue <= 24 ? "good" : "warning"
-    }
-  }
-
-  // Extract energy efficiency from output or metadata
-  let energyEfficiency = defaultMetrics.energyEfficiency
-  if (node.output?.estimatedSavings !== undefined) {
-    const savings = typeof node.output.estimatedSavings === 'string' 
-      ? parseFloat(node.output.estimatedSavings.replace('%', '')) || 12
-      : (node.output.estimatedSavings as number) || 12
-    const efficiency = 100 - Math.abs(savings)
-    energyEfficiency = {
-      value: Math.max(0, Math.min(100, efficiency)).toFixed(0),
-      status: efficiency >= 90 ? "optimal" : efficiency >= 85 ? "good" : "warning"
-    }
-  } else if (node.metadata?.confidence !== undefined) {
-    const confidence = node.metadata.confidence
-    energyEfficiency = {
-      value: confidence.toFixed(0),
-      status: confidence >= 90 ? "optimal" : confidence >= 80 ? "good" : "warning"
-    }
-  }
-
-  // Count decision nodes in the execution
-  let aiDecisions = defaultMetrics.aiDecisions
-  if (execution?.rootNode) {
-    const countDecisions = (node: AgentNode): number => {
-      let count = node.type === "decision" ? 1 : 0
-      if (node.children) {
-        count += node.children.reduce((sum, child) => sum + countDecisions(child), 0)
-      }
-      return count
-    }
-    const decisionCount = countDecisions(execution.rootNode)
-    aiDecisions = {
-      value: decisionCount.toString(),
-      status: decisionCount > 0 ? "good" : "optimal"
-    }
-  }
-
-  return { temperature, energyEfficiency, aiDecisions }
-}
-
-interface MetricCardProps {
-  label: string
-  value: string
-  unit: string
-  icon: React.ReactNode
-  status: "optimal" | "good" | "warning"
-}
-
-function MetricCard({ label, value, unit, icon, status }: MetricCardProps) {
-  const statusColors = {
-    optimal: "bg-green-50 text-green-700 border-green-200",
-    good: "bg-blue-50 text-blue-700 border-blue-200",
-    warning: "bg-amber-50 text-amber-700 border-amber-200",
-  }
-
-  return (
-    <Card className="border-l-4 border-l-blue-500">
-      <CardContent className="p-6">
-        <div className="flex items-start justify-between">
-          <div className="space-y-1">
-            <p className="text-sm font-medium text-muted-foreground">{label}</p>
-            <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-bold">{value}</span>
-              <span className="text-sm text-muted-foreground">{unit}</span>
-            </div>
-          </div>
-          <div className="rounded-full bg-blue-100 p-3">
-            {icon}
-          </div>
-        </div>
-        <Badge className={`mt-3 ${statusColors[status]}`} variant="outline">
-          {status === "optimal" && "Optimal Performance"}
-          {status === "good" && "Normal Operation"}
-          {status === "warning" && "Requires Attention"}
-        </Badge>
-      </CardContent>
-    </Card>
-  )
+  child_runs: ChildRun[]
 }
 
 interface DashboardCardsProps {
@@ -144,252 +38,442 @@ interface DashboardCardsProps {
    * Selected event ID from timeline
    */
   selectedEventId?: string
-  
+
   /**
    * Time range for display
    */
   timeRange?: "24h" | "7d" | "30d" | "custom"
+
+  /**
+   * Selected timestep index (0-95)
+   */
+  timestepIndex?: number
 }
 
-export function DashboardCards({ 
-  selectedEventId,
-  timeRange
-}: DashboardCardsProps = {}) {
-  const [selectedNode, setSelectedNode] = useState<AgentNode | null>(null)
-  
-  // Use mock data for now
-  const displayExecution = mockAgentExecution
+// Load actual trace data (for now, using timestep 30's data as template)
+function loadTraceData(timestepIndex: number): AgentTraceData {
+  // For now, return the actual trace data from timestep 30
+  // In production, this would load different traces based on timestepIndex
+  return agentTrace30 as AgentTraceData
+}
 
-  const handleNodeClick = (node: AgentNode) => {
-    setSelectedNode(node)
+export function DashboardCards({
+  selectedEventId,
+  timeRange,
+  timestepIndex = 2
+}: DashboardCardsProps = {}) {
+  const [runData, setRunData] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [isExpanded, setIsExpanded] = useState(false)
+
+  // Load run data on mount
+  useEffect(() => {
+    loadRunData().then((data) => {
+      setRunData(data)
+      setLoading(false)
+    })
+  }, [])
+
+  // Load actual agent trace data
+  const trace = loadTraceData(timestepIndex)
+
+  if (!trace) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="text-gray-400">Loading trace data...</div>
+      </div>
+    )
   }
 
-  // Extract metrics from selected node or execution
-  const metrics = getMetricsFromNode(selectedNode, displayExecution)
+  const formatTime = (isoString: string) => {
+    return new Date(isoString).toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    })
+  }
+
+  // Extract key data for summary panel
+  const llmRun = trace.child_runs.find(r => r.run_type === 'llm')
+  const safetyRun = trace.child_runs.find(r => r.name === 'SafetyValidation')
+  const envRun = trace.child_runs.find(r => r.name === 'ReadEnvironmentState')
+  const forecastRun = trace.child_runs.find(r => r.name === 'LoadForecastTool')
+
+  // Extract decision info
+  const decision = llmRun?.outputs?.parsed_decision
+  const reasoningContent = llmRun?.outputs?.content || ''
+  const rationale = reasoningContent.split('\n\n')[0] // First paragraph as brief rationale
+
+  // Extract efficiency from timestep_data (read from JSON, not child runs)
+  const traceData = trace as any
+  const efficiencyBefore = traceData.efficiency?.actual || (traceData.timestep_data?.plant.power / traceData.timestep_data?.plant.cooling) || 0
+  const efficiencyAfter = traceData.efficiency?.predicted || 0
+
+  // Extract load split from parsed decision
+  const afterState = decision?.predicted_load_split || {}
+
+  // Extract safety checks
+  const safetyChecks = safetyRun?.outputs?.checks || []
+  const safetyScore = safetyRun?.outputs?.safety_score || 0
+
+  // Calculate execution breakdown
+  const totalTime = trace.execution_time_ms
+  const toolTime = trace.child_runs
+    .filter(r => r.run_type === 'tool')
+    .reduce((sum, r) => sum + r.execution_time_ms, 0)
+  const llmTime = llmRun?.execution_time_ms || 0
 
   return (
     <div className="space-y-6">
-      {/* Agent Execution Trace & Responses - Single Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-[70%_30%] gap-6">
-        {/* Left Side - Agent Execution Flowchart */}
-        <Card className="flex flex-col border-0">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Activity className="h-5 w-5 text-blue-600" />
-                <div>
-                  <CardTitle className="text-xl font-semibold">Agent Execution Trace</CardTitle>
-                  <CardDescription>AI agent decision flow visualization</CardDescription>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                  {displayExecution.status.toUpperCase()}
-                </Badge>
-                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                  {displayExecution.totalDuration}ms
-                </Badge>
-              </div>
-            </div>
-          </CardHeader>
-
-          <CardContent className="flex-1 overflow-hidden p-0">
-            <div className="h-[600px] overflow-auto bg-white">
-              <AgentFlowChart
-                rootNode={displayExecution.rootNode}
-                responses={mockAgentResponses}
-                onNodeClick={handleNodeClick}
-              />
-            </div>
-
-            {/* Trace Summary */}
-            <div className="mt-6 grid grid-cols-3 gap-4 px-4 pb-4">
-              <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-                <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Total Duration</div>
-                <div className="text-2xl font-bold text-blue-600">{displayExecution.totalDuration}ms</div>
-              </div>
-              <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-                <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Total Cost</div>
-                <div className="text-2xl font-bold text-blue-600">${displayExecution.totalCost?.toFixed(4) || '0.0000'}</div>
-              </div>
-              <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-                <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Execution ID</div>
-                <div className="text-sm font-mono font-semibold text-blue-600 truncate">{displayExecution.id}</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Right Side - Agent Responses */}
-        <Card className="flex flex-col border-0">
-          <CardHeader className="border-0">
-            <div className="flex items-center gap-2">
-              <Brain className="h-5 w-5 text-blue-600" />
-              <div>
-                <CardTitle className="text-lg font-semibold">Agent Responses</CardTitle>
-                <CardDescription className="text-sm">Real-time execution log</CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="flex-1 overflow-hidden pt-0">
-            <div className="h-[600px] overflow-auto pr-2">
-              {mockAgentResponses.map((response) => (
-                <AgentResponseCard key={response.id} response={response} />
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Chain of Thought & Final Insight - Two Column Layout */}
+      {/* 2-Column Grid Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Chain of Thought (COT) */}
-        <SpotlightCard className="bg-white border-blue-200 shadow-sm" spotlightColor="rgba(59, 130, 246, 0.1)">
-        <div className="flex items-center gap-2.5 mb-5">
-          <div className="rounded-lg bg-blue-100 p-2">
-            <Brain className="h-5 w-5 text-blue-600" />
+        {/* LEFT COLUMN: Agent Execution Trace */}
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+          {/* Header */}
+          <div className="border-b border-gray-200 bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-bold text-gray-900">{trace.name}</h2>
+                <div className="flex items-center gap-3 mt-1.5 text-sm text-gray-600">
+                  <span className="flex items-center gap-1.5">
+                    <Clock className="h-3.5 w-3.5" />
+                    {formatTime(trace.start_time)}
+                  </span>
+                  <span>•</span>
+                  <span className="font-mono">{(trace.execution_time_ms / 1000).toFixed(1)}s</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="px-3 py-1.5 rounded-full bg-green-100 text-green-700 text-xs font-semibold">
+                  {trace.status.toUpperCase()}
+                </div>
+              </div>
+            </div>
           </div>
-          <div>
-            <h3 className="text-lg font-bold text-gray-900">AI Decision Chain of Thought</h3>
-            <p className="text-xs text-gray-500">Latest AI cooling optimization decision</p>
+
+          {/* Child Runs */}
+          <div className="divide-y divide-gray-100">
+            {trace.child_runs.map((run, idx) => (
+              <ChildRunBlock key={run.id} run={run} formatTime={formatTime} />
+            ))}
           </div>
         </div>
 
+        {/* RIGHT COLUMN: Decision Summary & Impact */}
         <div className="space-y-4">
-          {/* Step 1: Detected */}
-          <div className="flex items-start gap-3 group">
-            <div className="rounded-lg bg-gradient-to-br from-blue-100 to-blue-50 p-2 flex-shrink-0 shadow-sm group-hover:shadow transition-all">
-              <CheckCircle2 className="h-4 w-4 text-blue-600" />
+          {/* Before → After State */}
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="border-b border-gray-200 px-6 py-3 bg-gradient-to-r from-blue-50 to-cyan-50">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="h-4 w-4 text-blue-600" />
+                <h3 className="font-bold text-gray-900">Impact Analysis</h3>
+              </div>
             </div>
-            <div className="flex-1">
-              <h4 className="font-semibold text-gray-900 text-sm mb-1">Detected: High cooling load (85%)</h4>
-              <p className="text-xs text-gray-600 leading-relaxed">
-                Zone 1 temperature rising above optimal threshold of 22°C
-              </p>
+            <div className="px-6 py-4 space-y-4">
+              {/* Efficiency Change */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Plant Efficiency</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="flex-1">
+                    <div className="text-2xl font-bold text-gray-900">{efficiencyBefore.toFixed(2)}</div>
+                    <div className="text-xs text-gray-500">kW/ton (before)</div>
+                  </div>
+                  <ArrowRight className="h-5 w-5 text-gray-400" />
+                  <div className="flex-1">
+                    <div className="text-2xl font-bold text-green-600">{efficiencyAfter.toFixed(2)}</div>
+                    <div className="text-xs text-gray-500">kW/ton (predicted)</div>
+                  </div>
+                  <div className="px-2 py-1 rounded-md bg-green-100 text-green-700 text-xs font-semibold">
+                    {((efficiencyBefore - efficiencyAfter) / efficiencyBefore * 100).toFixed(1)}% ↓
+                  </div>
+                </div>
+              </div>
+
+              {/* Chiller Load Distribution */}
+              <div>
+                <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Predicted Load Split</div>
+                <div className="space-y-2">
+                  {Object.entries(afterState).map(([chiller, rla]) => {
+                    const rlaValue = Number(rla)
+                    return (
+                      <div key={chiller} className="flex items-center gap-3">
+                        <span className="text-sm font-medium text-gray-700 w-12">{chiller}</span>
+                        <div className="flex-1 h-8 bg-gray-100 rounded-lg overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-end px-2"
+                            style={{ width: `${rlaValue}%` }}
+                          >
+                            <span className="text-xs font-bold text-white">{rlaValue}%</span>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 pl-10">
-            <ArrowRight className="h-4 w-4 text-blue-400" />
+          {/* Safety Validation */}
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="border-b border-gray-200 px-6 py-3 bg-gradient-to-r from-emerald-50 to-green-50">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Shield className="h-4 w-4 text-green-600" />
+                  <h3 className="font-bold text-gray-900">Safety Validation</h3>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold text-green-600">Score: {safetyScore.toFixed(1)}</span>
+                  <CheckCircle2 className="h-4 w-4 text-green-600" />
+                </div>
+              </div>
+            </div>
+            <div className="px-6 py-4">
+              <div className="grid grid-cols-2 gap-2">
+                {safetyChecks.slice(0, 6).map((check: any) => (
+                  <div key={check.check} className="flex items-center gap-2">
+                    <CheckCircle2 className="h-3.5 w-3.5 text-green-500 flex-shrink-0" />
+                    <span className="text-xs text-gray-600 truncate">{check.check}</span>
+                  </div>
+                ))}
+              </div>
+              {safetyChecks.length > 6 && (
+                <div className="mt-2 text-xs text-gray-500 text-center">
+                  +{safetyChecks.length - 6} more checks passed
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* Step 2: Evaluated */}
-          <div className="flex items-start gap-3 group">
-            <div className="rounded-lg bg-gradient-to-br from-blue-100 to-blue-50 p-2 flex-shrink-0 shadow-sm group-hover:shadow transition-all">
-              <Lightbulb className="h-4 w-4 text-blue-600" />
+          {/* Performance Metrics */}
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="border-b border-gray-200 px-6 py-3 bg-gradient-to-r from-purple-50 to-pink-50">
+              <div className="flex items-center gap-2">
+                <Zap className="h-4 w-4 text-purple-600" />
+                <h3 className="font-bold text-gray-900">Performance Metrics</h3>
+              </div>
             </div>
-            <div className="flex-1">
-              <h4 className="font-semibold text-gray-900 text-sm mb-2">Evaluated: 3 possible actions</h4>
-              <ul className="space-y-1.5 list-none">
-                <li className="flex items-start gap-2 text-xs text-gray-600">
-                  <span className="w-1.5 h-1.5 rounded-full bg-gray-400 mt-1.5 flex-shrink-0"></span>
-                  <span>Increase primary chiller capacity <span className="text-gray-500">(+15kW)</span></span>
-                </li>
-                <li className="flex items-start gap-2 text-xs text-gray-900 font-medium">
-                  <span className="w-1.5 h-1.5 rounded-full bg-green-500 mt-1.5 flex-shrink-0"></span>
-                  <span>Activate secondary chiller <span className="text-gray-500 font-normal">(+12kW)</span> <span className="text-green-600">✓</span></span>
-                </li>
-                <li className="flex items-start gap-2 text-xs text-gray-600">
-                  <span className="w-1.5 h-1.5 rounded-full bg-gray-400 mt-1.5 flex-shrink-0"></span>
-                  <span>Adjust temperature setpoint <span className="text-gray-500">(+8kW)</span></span>
-                </li>
-              </ul>
-            </div>
-          </div>
+            <div className="px-6 py-4 space-y-3">
+              {/* Execution Time Breakdown */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Execution Breakdown</span>
+                  <span className="text-xs font-mono text-gray-700">{(totalTime / 1000).toFixed(1)}s total</span>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-24 text-xs text-gray-600">LLM Reasoning</div>
+                    <div className="flex-1 h-6 bg-gray-100 rounded overflow-hidden">
+                      <div
+                        className="h-full bg-purple-500 flex items-center justify-end px-2"
+                        style={{ width: `${(llmTime / totalTime) * 100}%` }}
+                      >
+                        <span className="text-xs font-bold text-white">{(llmTime / 1000).toFixed(1)}s</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-24 text-xs text-gray-600">Tool Calls</div>
+                    <div className="flex-1 h-6 bg-gray-100 rounded overflow-hidden">
+                      <div
+                        className="h-full bg-blue-500 flex items-center justify-end px-2"
+                        style={{ width: `${(toolTime / totalTime) * 100}%` }}
+                      >
+                        <span className="text-xs font-bold text-white">{(toolTime / 1000).toFixed(1)}s</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
 
-          <div className="flex items-center gap-2 pl-10">
-            <ArrowRight className="h-4 w-4 text-blue-400" />
-          </div>
-
-          {/* Step 3: Decision */}
-          <div className="flex items-start gap-3 group">
-            <div className="rounded-lg bg-gradient-to-br from-green-100 to-green-50 p-2 flex-shrink-0 shadow-sm group-hover:shadow transition-all">
-              <CheckCircle2 className="h-4 w-4 text-green-600" />
-            </div>
-            <div className="flex-1">
-              <h4 className="font-semibold text-gray-900 text-sm mb-1">Decision: Activate secondary chiller</h4>
-              <p className="text-xs text-gray-600 mb-2">
-                <span className="font-medium text-gray-900">92% confidence</span> • Energy savings: <span className="font-medium text-green-700">12%</span>
-              </p>
-              <Badge className="bg-green-100 text-green-800 border-green-300 text-xs font-medium px-2 py-0.5" variant="outline">
-                ✓ Executed
-              </Badge>
+              {/* Model Info */}
+              <div className="pt-3 border-t border-gray-100">
+                <div className="grid grid-cols-2 gap-3 text-xs">
+                  <div>
+                    <span className="text-gray-500">LLM Model</span>
+                    <p className="font-semibold text-gray-900 mt-1">
+                      {llmRun?.metadata?.model ?
+                        llmRun.metadata.model.includes('claude-sonnet-4') ? 'Claude Sonnet 4' :
+                        llmRun.metadata.model.includes('claude-sonnet') ? 'Claude Sonnet' :
+                        llmRun.metadata.model.includes('claude') ? 'Claude' :
+                        llmRun.metadata.model
+                        : 'N/A'}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">Total Tokens</span>
+                    <p className="font-semibold text-gray-900 mt-1">{llmRun?.metadata?.total_tokens?.toLocaleString() || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">Forecast Model</span>
+                    <p className="font-semibold text-gray-900 mt-1">
+                      {forecastRun?.metadata?.model_name?.includes('xgboost') ? 'XGBoost' :
+                       forecastRun?.metadata?.model_name || 'N/A'}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">Model R²</span>
+                    <p className="font-semibold text-gray-900 mt-1">{forecastRun?.metadata?.model_r2 || 'N/A'}</p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
-      </SpotlightCard>
-
-        {/* Final Insight */}
-        <SpotlightCard className="bg-white border-blue-200 shadow-sm" spotlightColor="rgba(16, 185, 129, 0.1)">
-          <div className="flex items-center gap-2.5 mb-5">
-            <div className="rounded-lg bg-green-100 p-2">
-              <CheckCircle2 className="h-5 w-5 text-green-600" />
-            </div>
-            <div>
-              <h3 className="text-lg font-bold text-gray-900">Final Insight</h3>
-              <p className="text-xs text-gray-500">AI recommendation summary</p>
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            {/* Recommendation */}
-            <div className="bg-gradient-to-br from-green-50 to-white rounded-lg p-4 border border-green-200">
-              <div className="flex items-start gap-2 mb-2">
-                <Lightbulb className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
-                <h4 className="font-semibold text-gray-900 text-sm">Optimal Solution</h4>
-              </div>
-              <p className="text-xs text-gray-600 leading-relaxed">
-                Activating the secondary chiller provides the best balance between cooling efficiency and energy consumption for current load conditions.
-              </p>
-            </div>
-
-            {/* Key Metrics */}
-            <div className="space-y-3">
-              <h4 className="font-semibold text-gray-900 text-sm">Key Metrics</h4>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
-                  <div className="text-xs text-gray-600 mb-1">Energy Saved</div>
-                  <div className="text-lg font-bold text-blue-600">12%</div>
-                </div>
-                <div className="bg-green-50 rounded-lg p-3 border border-green-200">
-                  <div className="text-xs text-gray-600 mb-1">Confidence</div>
-                  <div className="text-lg font-bold text-green-600">92%</div>
-                </div>
-                <div className="bg-purple-50 rounded-lg p-3 border border-purple-200">
-                  <div className="text-xs text-gray-600 mb-1">Response Time</div>
-                  <div className="text-lg font-bold text-purple-600">3.5s</div>
-                </div>
-                <div className="bg-orange-50 rounded-lg p-3 border border-orange-200">
-                  <div className="text-xs text-gray-600 mb-1">Cost Impact</div>
-                  <div className="text-lg font-bold text-orange-600">-$42</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Next Steps */}
-            <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-              <div className="flex items-start gap-2 mb-2">
-                <Activity className="h-4 w-4 text-gray-600 mt-0.5 flex-shrink-0" />
-                <h4 className="font-semibold text-gray-900 text-sm">Next Steps</h4>
-              </div>
-              <ul className="space-y-1.5 list-none">
-                <li className="flex items-start gap-2 text-xs text-gray-600">
-                  <span className="text-green-600">•</span>
-                  <span>Monitor zone temperature for next 15 minutes</span>
-                </li>
-                <li className="flex items-start gap-2 text-xs text-gray-600">
-                  <span className="text-green-600">•</span>
-                  <span>Prepare to adjust if load increases beyond 90%</span>
-                </li>
-                <li className="flex items-start gap-2 text-xs text-gray-600">
-                  <span className="text-green-600">•</span>
-                  <span>Log efficiency metrics for future optimization</span>
-                </li>
-              </ul>
-            </div>
-          </div>
-        </SpotlightCard>
       </div>
     </div>
   )
 }
+
+// Child run block component with improved design
+function ChildRunBlock({ run, formatTime }: { run: ChildRun; formatTime: (isoString: string) => string }) {
+  const [showInputs, setShowInputs] = useState(false)
+  const [showOutputs, setShowOutputs] = useState(run.run_type === 'llm') // LLM outputs expanded by default
+
+  const getIcon = () => {
+    switch (run.run_type) {
+      case 'llm':
+        return <Brain className="h-4 w-4 text-white" />
+      case 'tool':
+        return <Wrench className="h-4 w-4 text-white" />
+      default:
+        return <Cpu className="h-4 w-4 text-white" />
+    }
+  }
+
+  const getIconBg = () => {
+    switch (run.run_type) {
+      case 'llm':
+        return 'bg-purple-600'
+      case 'tool':
+        return 'bg-blue-600'
+      default:
+        return 'bg-gray-600'
+    }
+  }
+
+  const getBg = () => {
+    return run.run_type === 'llm' ? 'bg-purple-50' : ''
+  }
+
+  return (
+    <div className={`px-6 py-5 ${getBg()} hover:bg-gray-50/50 transition-colors`}>
+      <div className="flex items-start gap-4">
+        {/* Icon */}
+        <div className="flex-shrink-0 mt-1">
+          <div className={`w-8 h-8 rounded-lg ${getIconBg()} flex items-center justify-center shadow-sm`}>
+            {getIcon()}
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 min-w-0">
+          {/* Header */}
+          <div className="flex items-start justify-between mb-3">
+            <div className="flex-1">
+              <div className="flex items-center gap-2">
+                <h3 className="font-semibold text-gray-900">{run.name}</h3>
+                <span className="px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700">
+                  {run.run_type}
+                </span>
+              </div>
+              <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
+                <span>{formatTime(run.start_time)}</span>
+                <span>•</span>
+                <span className="font-mono">{run.execution_time_ms}ms</span>
+                <span>•</span>
+                <span className={`font-semibold ${run.status === 'success' ? 'text-green-600' : 'text-red-600'}`}>
+                  {run.status}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Summary Section */}
+          {run.summary && (
+            <div className="mb-3 bg-gradient-to-r from-gray-50 to-white border border-gray-200 rounded-lg px-4 py-3">
+              <div className="flex items-start gap-2">
+                <div className="flex-shrink-0 mt-0.5">
+                  <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Summary</div>
+                  <p className="text-sm text-gray-700 leading-relaxed">
+                    {run.summary}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Inputs */}
+          <div className="mb-3">
+            <button
+              onClick={() => setShowInputs(!showInputs)}
+              className="flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
+            >
+              {showInputs ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              <span>Inputs</span>
+            </button>
+            {showInputs && (
+              <div className="mt-2 bg-white rounded-lg p-4 border border-gray-200">
+                <pre className="text-xs font-mono text-gray-700 whitespace-pre-wrap overflow-x-auto">
+                  {JSON.stringify(run.inputs, null, 2)}
+                </pre>
+                <div className="mt-2 text-xs text-gray-400 uppercase tracking-wide">JSON</div>
+              </div>
+            )}
+          </div>
+
+          {/* Outputs */}
+          <div>
+            <button
+              onClick={() => setShowOutputs(!showOutputs)}
+              className="flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
+            >
+              {showOutputs ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              <span>Outputs</span>
+            </button>
+            {showOutputs && (
+              <div className="mt-2">
+                {run.run_type === 'llm' && run.outputs.content ? (
+                  // Special formatting for LLM reasoning
+                  <div className="bg-gradient-to-br from-purple-50 to-white rounded-lg p-5 border border-purple-200">
+                    <pre className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap font-sans">
+                      {run.outputs.content}
+                    </pre>
+                  </div>
+                ) : (
+                  // JSON for other outputs
+                  <div className="bg-white rounded-lg p-4 border border-gray-200">
+                    <pre className="text-xs font-mono text-gray-700 whitespace-pre-wrap overflow-x-auto">
+                      {JSON.stringify(run.outputs, null, 2)}
+                    </pre>
+                    <div className="mt-2 text-xs text-gray-400 uppercase tracking-wide">JSON</div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Metadata tags */}
+          {run.tags && run.tags.length > 0 && (
+            <div className="flex items-center gap-2 mt-3">
+              {run.tags.map((tag) => (
+                <span key={tag} className="px-2 py-0.5 rounded-full text-xs bg-gray-100 text-gray-600">
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+

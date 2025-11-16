@@ -5,6 +5,7 @@ import { HeaderBar } from "@/components/layout"
 import { Timeline } from "@/components/timeline"
 import { OfflineIndicator } from "@/components/shared"
 import { DashboardCards } from "@/components/dashboard"
+import { DecisionSummary } from "@/components/decision-summary"
 import { ChatInterface } from "@/components/chat"
 import { TimelineEvent, TimeRange } from "@/types/timeline"
 import { mockTimelineEvents } from "@/utils/mockData/timelineEvents"
@@ -20,6 +21,7 @@ export default function Home() {
   const [timeRange, setTimeRange] = useState<TimeRange>("24h")
   const [systemStatus, setSystemStatus] = useState<"normal" | "warning" | "critical">("normal")
   const [isConnected, setIsConnected] = useState(true)
+  const [selectedTimestepIndex, setSelectedTimestepIndex] = useState<number>(2)
 
   // Use mock timeline events for now
   const displayEvents = mockTimelineEvents
@@ -41,6 +43,10 @@ export default function Home() {
     console.log("Alerts clicked")
   }
 
+  const handleTimestepClick = (index: number) => {
+    setSelectedTimestepIndex(index)
+  }
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header Bar */}
@@ -57,31 +63,28 @@ export default function Home() {
       {/* Main Content */}
       <main className="pt-16 pb-8">
         {/* Timeline */}
-        <div className="mb-6">
-          <Timeline
-            events={displayEvents}
-            selectedEventId={selectedEventId}
-            onEventClick={handleEventClick}
-            timeRange={timeRange}
-            onTimeRangeChange={handleTimeRangeChange}
-            height={180}
-          />
+        <Timeline
+          events={displayEvents}
+          selectedEventId={selectedEventId}
+          onEventClick={handleEventClick}
+          timeRange={timeRange}
+          onTimeRangeChange={handleTimeRangeChange}
+          height={180}
+          selectedTimestepIndex={selectedTimestepIndex}
+          onTimestepClick={handleTimestepClick}
+        />
+
+        {/* Decision Summary */}
+        <div id="decision-summary-section" className="px-6 mb-4">
+          <DecisionSummary timestepIndex={selectedTimestepIndex} />
         </div>
 
         {/* Dashboard Section */}
-        <div id="dashboard-section" className="container mx-auto px-4 max-w-7xl">
-          <div className="mb-6">
-            <h2 className="text-2xl font-semibold mb-2">
-              AI Agent Cooling Control Dashboard
-            </h2>
-            <p className="text-muted-foreground">
-              Monitor system performance and decision metrics in real-time
-            </p>
-          </div>
-
+        <div id="dashboard-section" className="px-6">
           <DashboardCards
             selectedEventId={selectedEventId}
             timeRange={timeRange}
+            timestepIndex={selectedTimestepIndex}
           />
         </div>
       </main>
