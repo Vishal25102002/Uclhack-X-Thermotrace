@@ -3,7 +3,7 @@
 export type NodeType = "agent" | "tool" | "llm" | "decision"
 export type NodeStatus = "success" | "error" | "running" | "pending"
 
-export interface AgentNode {
+export interface AgentNode extends Record<string, unknown> {
   id: string
   name: string
   type: NodeType

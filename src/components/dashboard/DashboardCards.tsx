@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react"
 import { ChevronDown, ChevronUp, CheckCircle2, Clock, Bot, Wrench, Brain, Cpu, TrendingUp, Shield, Zap, Activity, ArrowRight } from "lucide-react"
 import { loadRunData, detectControlDecision, checkViolations, parseTimestepData, getEfficiency } from "@/utils/decisionData"
 import agentTrace30 from '@/data/agent-trace-30.json'
+import { FlowchartContainer } from "@/components/agent-flowchart"
 
 interface ChildRun {
   id: string
@@ -322,6 +323,9 @@ export function DashboardCards({
               </div>
             </div>
           </div>
+
+          {/* Agent Execution Flowchart */}
+          <FlowchartContainer timestepIndex={timestepIndex} />
         </div>
       </div>
     </div>

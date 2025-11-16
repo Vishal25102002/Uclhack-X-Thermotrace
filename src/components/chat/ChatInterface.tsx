@@ -31,7 +31,7 @@ export default function ChatInterface() {
   const [input, setInput] = useState("")
   const [isLoading, setIsLoading] = useState(false)
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!input.trim()) return
 
     const userMessage: Message = {
@@ -45,17 +45,42 @@ export default function ChatInterface() {
     setInput("")
     setIsLoading(true)
 
-    // Simulate AI response
-    setTimeout(() => {
+    try {
+      // Call Groq API
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          messages: [...messages, userMessage].map(msg => ({
+            role: msg.role,
+            content: msg.content,
+          })),
+        }),
+      })
+
+      const data = await response.json()
+
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: "I'm analyzing your thermal data. This is a demo response. Integration with AI coming soon!",
+        content: data.content || "I apologize, I couldn't process that request.",
         timestamp: new Date(),
       }
       setMessages((prev) => [...prev, aiMessage])
+    } catch (error) {
+      console.error("Chat error:", error)
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: "assistant",
+        content: "I'm having trouble connecting right now. Please try again in a moment.",
+        timestamp: new Date(),
+      }
+      setMessages((prev) => [...prev, errorMessage])
+    } finally {
       setIsLoading(false)
-    }, 1000)
+    }
   }
 
   const handleKeyPress = (e: React.KeyboardEvent) => {

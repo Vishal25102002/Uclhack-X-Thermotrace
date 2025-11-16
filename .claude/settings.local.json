@@ -13,7 +13,15 @@
       "Bash(npx tsc:*)",
       "Bash(node -e:*)",
       "Bash(npm install:*)",
-      "Bash(npm run dev:*)"
+      "Bash(npm run dev:*)",
+      "Bash(lsof:*)",
+      "Bash(git stash:*)",
+      "Bash(git log:*)",
+      "Bash(git commit:*)",
+      "Bash(git fetch:*)",
+      "Bash(git ls-tree:*)",
+      "Bash(git merge:*)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []
