@@ -1,119 +1,157 @@
-# UCL Hacker - AI Cooling Control Dashboard
+# ThermoTrace - AI Cooling Control Dashboard 🌡️
 
-An intelligent dashboard for monitoring and visualizing AI agent decision-making for cooling system optimization. Features real-time trace visualization from LangSmith with interactive flowcharts.
+> **Intelligent real-time dashboard for monitoring and optimizing thermal cooling systems using AI agents, LangSmith tracing, and Groq AI chatbot.**
+
+![ThermoTrace Dashboard](./public/dashboard-preview.png)
+
+## 🎯 Overview
+
+ThermoTrace is a Next.js-powered monitoring platform that visualizes AI agent decision-making for cooling system optimization. It features real-time trace visualization from LangSmith, interactive flowcharts, and an AI-powered chatbot using Groq's LLaMA 3.3 70B model.
+
+**Key Highlights:**
+- 🤖 **AI Agent Visualization** - Interactive flowcharts showing agent reasoning and decision paths
+- 💬 **Groq AI Chatbot** - Ultra-fast responses (0.5-2s) with thermal domain expertise
+- 📊 **Real-time Metrics** - Live temperature, efficiency, and system performance monitoring
+- 🔄 **LangSmith Integration** - Fetch and visualize actual agent execution traces
+- 📈 **Digital Twin Simulation** - Visual system diagram with live predictions
 
 ## 🚀 Quick Start
 
-**See [QUICKSTART.md](./QUICKSTART.md) for setup instructions!**
-
 ### Prerequisites
 - Node.js 20+ and pnpm
-- LangSmith account (optional, falls back to mock data)
+- LangSmith account (optional - falls back to mock data)
+- Groq API key (optional - for chatbot functionality)
 
-## Getting Started
-
-First, configure your LangSmith credentials (optional):
-
-```bash
-# Copy environment template
-cp .env.local.example .env.local
-
-# Edit .env.local with your LangSmith API key and project name
-# See LANGSMITH_SETUP.md for detailed instructions
-```
-
-Then, run the development server:
+### Installation
 
 ```bash
+# Clone the repository
+git clone https://github.com/Vishal25102002/Uclhack-X-Thermotrace.git
+cd ucl-hacker
+
+# Install dependencies
 pnpm install
+
+# Configure environment variables
+cp .env.local.example .env.local
+# Edit .env.local with your API keys
+
+# Run development server
 pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) to view the dashboard.
+
+## ⚙️ Configuration
+
+Create a `.env.local` file with the following:
+
+```env
+# LangSmith (Optional - for real agent traces)
+LANGSMITH_TRACING=true
+LANGSMITH_ENDPOINT=https://api.smith.langchain.com
+LANGSMITH_API_KEY=lsv2_pt_your_api_key_here
+LANGSMITH_PROJECT=your-project-name
+
+# Groq AI (Optional - for chatbot)
+GROQ_API_KEY=gsk_your_groq_api_key_here
+```
 
 ## ✨ Features
 
-### Dynamic LangSmith Integration
-- **Real-time Trace Visualization**: Fetch and display actual AI agent execution traces
-- **Interactive Flowcharts**: Click nodes to see inputs, outputs, and metadata
-- **Auto-scaling Layout**: Flowcharts automatically fit container with proper scrolling
-- **Time-based Filtering**: Filter traces by 24h, 7d, or 30d
-- **Graceful Fallback**: Works with mock data if LangSmith is not configured
+### 🎨 Dashboard Components
+- **Agent Flowchart** - Visual representation of AI decision-making with clickable nodes
+- **Metrics Cards** - Real-time monitoring of cooling tons, power consumption, and temperatures
+- **Timeline View** - Event-based timeline of system operations and decisions
+- **Chain of Thought** - Detailed AI reasoning breakdown with context and validation
+- **Digital Twin** - Interactive system diagram with flow indicators and predictions
+- **AI Chatbot** - Context-aware assistant for thermal system queries
 
-### Dashboard Components
-- **Agent Execution Trace**: Visual flowchart of agent decision-making process
-- **Timeline**: Event-based timeline of system operations
-- **Metrics Cards**: Real-time system metrics (temperature, efficiency, AI decisions)
-- **Chain of Thought**: Detailed reasoning breakdown for AI decisions
-- **System Status**: Live system health and uptime monitoring
-
-## 📚 Documentation
-
-- **[QUICKSTART.md](./QUICKSTART.md)** - Get started in 3 steps
-- **[LANGSMITH_SETUP.md](./LANGSMITH_SETUP.md)** - Detailed LangSmith setup guide
-- **[IMPROVEMENTS_SUMMARY.md](./IMPROVEMENTS_SUMMARY.md)** - Technical implementation details
-- **[VISUAL_IMPROVEMENTS.md](./VISUAL_IMPROVEMENTS.md)** - Before/after visual comparisons
-
-## 🔧 Recent Improvements
-
-### Flowchart Visualization (Latest)
-- ✅ Fixed arrows expanding beyond container
-- ✅ Dynamic SVG sizing based on actual content
-- ✅ Overflow scrolling for large flowcharts
-- ✅ Responsive layout with flex-wrap
-- ✅ Improved auto-scaling algorithm
-
-### LangSmith Integration
-- ✅ Added LangSmith SDK for real trace fetching
-- ✅ Dynamic flowchart generation from trace data
-- ✅ Real-time updates with configurable refresh interval
-- ✅ Comprehensive error handling and fallbacks
+### 🔧 Technical Features
+- Interactive flowcharts with auto-scaling and responsive layout
+- Real-time data fetching from LangSmith API
+- Graceful fallback to mock data when APIs are unavailable
+- Time-based filtering (24h, 7d, 30d)
+- Ultra-fast AI responses using Groq's LPU infrastructure
+- Responsive design with Tailwind CSS and shadcn/ui
 
 ## 🏗️ Project Structure
 
 ```
 src/
-├── app/                    # Next.js app directory
-│   ├── api/               # API routes
-│   │   └── langsmith/     # LangSmith API endpoints
-│   └── page.tsx           # Main dashboard page
-├── components/            # React components
-│   ├── dashboard/         # Dashboard cards and layouts
-│   ├── visualization/     # Flowchart and charts
-│   │   └── AgentFlowChart.tsx  # LangSmith trace flowchart
-│   ├── timeline/          # Timeline components
-│   └── ui/                # Reusable UI components
+├── app/
+│   ├── api/
+│   │   ├── chat/          # Groq AI chatbot endpoint
+│   │   └── websocket/     # Real-time data websocket
+│   ├── flowchart/         # Flowchart visualization page
+│   └── page.tsx           # Main dashboard
+├── components/
+│   ├── agent-flowchart/   # Agent trace visualization
+│   ├── chat/              # AI chatbot interface
+│   ├── dashboard/         # Dashboard cards and layout
+│   ├── chain-of-thought/  # Decision reasoning panels
+│   ├── digital-twin/      # System diagram components
+│   └── ui/                # Reusable UI components (shadcn)
 ├── hooks/                 # Custom React hooks
-│   └── useLangSmithTrace.ts   # LangSmith data fetching
-├── services/              # External service integrations
-│   └── langsmith.ts       # LangSmith SDK client
-├── types/                 # TypeScript type definitions
-└── utils/                 # Utility functions
+├── services/              # API integrations (LangSmith, WebSocket)
+├── types/                 # TypeScript definitions
+└── utils/                 # Helper functions and mock data
 ```
 
-## 🔑 Environment Variables
+## 🤖 AI Chatbot
 
-Required for LangSmith integration (optional, app works without):
+The integrated chatbot is powered by **Groq AI with LLaMA 3.3 70B**, providing:
+- **Lightning-fast responses** (500+ tokens/second)
+- **Domain expertise** in thermal systems, HVAC, and energy optimization
+- **Context awareness** from last 6 messages
+- **Professional technical guidance**
 
-```env
-LANGSMITH_API_KEY=your_api_key_here
-LANGSMITH_PROJECT=your_project_name
+Example questions:
+- "What is cooling ton?"
+- "How can I optimize energy efficiency?"
+- "Explain the agent's decision trace"
+- "What do the safety violations mean?"
+
+## 📊 LangSmith Integration
+
+Connect your AI agents to visualize real execution traces:
+
+```python
+# Python example
+from langsmith import traceable
+
+@traceable(name="CoolingOptimizationAgent")
+def cooling_agent(temperature: float):
+    decision = analyze_temperature(temperature)
+    return execute_action(decision)
 ```
 
-See `.env.local.example` for full configuration options.
+The dashboard will automatically fetch and display your agent's decision paths.
 
-## Learn More
+## 🎨 UI Preview
 
-### Next.js
-To learn more about Next.js, take a look at the following resources:
+![Dashboard Screenshot](./public/dashboard-preview.png)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+*Main dashboard showing real-time metrics, agent flowchart, and timeline*
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 🛠️ Tech Stack
 
-## Deploy on Vercel
+- **Framework:** Next.js 15 (App Router)
+- **Language:** TypeScript
+- **Styling:** Tailwind CSS, shadcn/ui
+- **AI/ML:** Groq AI (LLaMA 3.3 70B), LangSmith SDK
+- **Visualization:** React Flow, Recharts
+- **State Management:** React Hooks
+- **Date Handling:** date-fns
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 📝 License
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+MIT License - See LICENSE file for details
+
+## 🤝 Contributing
+
+Contributions are welcome! Please open an issue or submit a pull request.
+
+---
+
+**Built for UCL Hackathon** | Made with ❤️ by ThermoTrace Team
