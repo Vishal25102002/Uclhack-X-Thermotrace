@@ -2,7 +2,8 @@
 
 > **Intelligent real-time dashboard for monitoring and optimizing thermal cooling systems using AI agents, LangSmith tracing, and Groq AI chatbot.**
 
-![ThermoTrace Dashboard](./public/dashboard-preview.png)
+![ThermoTrace Dashboard](<img width="2812" height="1460" alt="image" src="https://github.com/user-attachments/assets/57167deb-6079-4ebc-9b47-419453980e97" />
+)
 
 ## 🎯 Overview
 
