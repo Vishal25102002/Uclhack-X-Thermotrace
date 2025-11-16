@@ -1,9 +1,17 @@
 import { NextRequest, NextResponse } from "next/server"
 import Groq from "groq-sdk"
 
-const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY,
-})
+// Initialize Groq client lazily to avoid build-time errors
+let groq: Groq | null = null
+
+function getGroqClient() {
+  if (!groq) {
+    groq = new Groq({
+      apiKey: process.env.GROQ_API_KEY || "",
+    })
+  }
+  return groq
+}
 
 // System prompt with context about the ThermoTrace application
 const SYSTEM_PROMPT = `You are ThermoTrace AI, an intelligent assistant for a thermal cooling control monitoring system.
@@ -75,8 +83,18 @@ export async function POST(req: NextRequest) {
       ...messages.slice(-6), // Keep last 6 messages for context (3 exchanges)
     ]
 
+    // Check if API key is configured
+    if (!process.env.GROQ_API_KEY) {
+      return NextResponse.json(
+        {
+          content: "The chatbot is not configured yet. Please set up the GROQ_API_KEY environment variable.",
+        },
+        { status: 200 }
+      )
+    }
+
     // Call Groq API with LLaMA model
-    const completion = await groq.chat.completions.create({
+    const completion = await getGroqClient().chat.completions.create({
       messages: formattedMessages as any,
       model: "llama-3.3-70b-versatile", // Fast and powerful LLaMA model
       temperature: 0.7,
